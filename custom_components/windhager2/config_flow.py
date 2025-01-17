@@ -28,15 +28,25 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
-    host = data["host"].strip().rstrip('/')
-    
-    # Remove any protocol prefix if present
-    if '://' in host:
+    host = data["host"].strip().rstrip("/")
+
+    # Remove any protocol prefix and additional paths if present
+    if "://" in host:
         parsed = urlparse(host)
         host = parsed.netloc or parsed.path
-    
+    else:
+        # Handle case where user just pasted a URL without protocol
+        host = host.split("/")[0]
+
+    # Remove any port number if present
+    if ":" in host:
+        host = host.split(":")[0]
+
+    # Final cleanup of any remaining slashes or spaces
+    host = host.strip("/")
+
     _LOGGER.info("Validating Windhager connection - Host: %s", host)
-    
+
     try:
         client = WindhagerHttpClient(
             host=host,
@@ -53,7 +63,10 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
         finally:
             await client.close()
 
-        return {"title": f"Windhager Heater ({host})"}
+        return {
+            "title": f"Windhager Heater ({host})",
+            "host": host,  # Return the cleaned host
+        }
 
     except Exception as err:
         _LOGGER.exception("Unexpected exception during validation: %s", str(err))
@@ -81,6 +94,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         try:
             info = await validate_input(self.hass, user_input)
+            # Create a new dict with cleaned host value
+            cleaned_data = {
+                "host": info["host"],  # Use the cleaned host
+                "password": user_input["password"],
+            }
+            return self.async_create_entry(title=info["title"], data=cleaned_data)
         except CannotConnect:
             errors["base"] = "cannot_connect"
         except InvalidAuth:
@@ -88,8 +107,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("Unexpected exception")
             errors["base"] = "unknown"
-        else:
-            return self.async_create_entry(title=info["title"], data=user_input)
 
         return self.async_show_form(
             step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
