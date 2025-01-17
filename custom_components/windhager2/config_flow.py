@@ -1,0 +1,87 @@
+"""Config flow for Windhager heater integration."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+import voluptuous as vol
+
+from homeassistant import config_entries
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResult
+
+from .const import DOMAIN
+from .client import WindhagerHttpClient
+from .exceptions import CannotConnect, InvalidAuth
+
+_LOGGER = logging.getLogger(__name__)
+
+STEP_USER_DATA_SCHEMA = vol.Schema(
+    {
+        vol.Required("host"): str,
+        vol.Required("password"): str,
+    }
+)
+
+
+async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
+    """Validate the user input allows us to connect."""
+    _LOGGER.debug("Validating connection to Windhager device at %s", data["host"])
+    try:
+        client = WindhagerHttpClient(
+            host=data["host"],
+            password=data["password"],
+        )
+
+        try:
+            _LOGGER.debug("Testing connection by fetching root device info")
+            await client.fetch("/1")
+            _LOGGER.info("Successfully connected to Windhager device at %s", data["host"])
+        except Exception as err:
+            _LOGGER.error("Connection test failed for %s: %s", data["host"], str(err))
+            raise CannotConnect from err
+        finally:
+            await client.close()
+
+        return {"title": f"Windhager Heater ({data['host']})"}
+
+    except Exception as err:
+        _LOGGER.exception("Unexpected exception during validation: %s", str(err))
+        raise CannotConnect from err
+
+
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for heater."""
+
+    VERSION = 1
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle the initial step."""
+        if user_input is None:
+            _LOGGER.debug("Showing initial config flow form")
+            return self.async_show_form(
+                step_id="user", data_schema=STEP_USER_DATA_SCHEMA
+            )
+
+        _LOGGER.debug("Attempting to validate config for host %s", user_input["host"])
+
+        errors = {}
+
+        try:
+            info = await validate_input(self.hass, user_input)
+        except CannotConnect:
+            errors["base"] = "cannot_connect"
+        except InvalidAuth:
+            errors["base"] = "invalid_auth"
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.exception("Unexpected exception")
+            errors["base"] = "unknown"
+        else:
+            return self.async_create_entry(title=info["title"], data=user_input)
+
+        return self.async_show_form(
+            step_id="user", data_schema=STEP_USER_DATA_SCHEMA, errors=errors
+        )
