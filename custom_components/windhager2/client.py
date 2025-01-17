@@ -16,31 +16,41 @@ class WindhagerHttpClient:
         self.password = password
         self.oids = None
         self.devices = []
+        self._session = None
+        self._auth = None
+
+    async def _ensure_session(self):
+        """Ensure that we have an active client session"""
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
+            self._auth = DigestAuth(DEFAULT_USERNAME, self.password, self._session)
+
+    async def close(self):
+        """Close the client session"""
+        if self._session:
+            await self._session.close()
+            self._session = None
+            self._auth = None
 
     async def fetch(self, url):
         try:
-            client = aiohttp.ClientSession()
-            auth = DigestAuth(DEFAULT_USERNAME, self.password, client)
-            ret = await auth.request("GET", f"http://{self.host}/api/1.0/lookup{url}")
+            await self._ensure_session()
+            ret = await self._auth.request("GET", f"http://{self.host}/api/1.0/lookup{url}")
             json = await ret.json()
             _LOGGER.debug("Fetched data for %s: %s", url, json)
             return json
         except Exception as e:
             _LOGGER.error("Failed to fetch data for %s: %s", url, str(e))
             raise
-        finally:
-            await client.close()
 
     async def update(self, oid, value):
-        client = aiohttp.ClientSession()
-        auth = DigestAuth("USER", self.password, client)
-        await auth.request(
+        await self._ensure_session()
+        await self._auth.request(
             "PUT",
             f"http://{self.host}/api/1.0/datapoint",
             data=bytes(
                 f'{{"OID":"{oid}","value":"{value}"}}', "utf-8"),
         )
-        await client.close()
 
     @staticmethod
     def slugify(identifier_str):
