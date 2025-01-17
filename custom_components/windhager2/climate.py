@@ -24,6 +24,7 @@ from .helpers import get_oid_value
 
 _LOGGER = logging.getLogger(__name__)
 
+
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities
 ) -> None:
@@ -44,12 +45,15 @@ async def async_setup_entry(
 
     for device_info in coordinator.data.get("devices", []):
         if device_info.get("type") == "climate":
-            entities.extend([
-                WindhagerThermostatClimate(coordinator, device_info),
-                WindhagerThermostatClimateWithoutBias(coordinator, device_info)
-            ])
+            entities.extend(
+                [
+                    WindhagerThermostatClimate(coordinator, device_info),
+                    WindhagerThermostatClimateWithoutBias(coordinator, device_info),
+                ]
+            )
 
     async_add_entities(entities)
+
 
 class WindhagerBaseThermostat(CoordinatorEntity, ClimateEntity):
     """Base class for Windhager thermostats."""
@@ -155,7 +159,7 @@ class WindhagerBaseThermostat(CoordinatorEntity, ClimateEntity):
         """Set new preset mode."""
         id_mode = self._preset_modes.index(preset_mode)
         await self.client.update(f"{self._prefix}/0/3/50/0", str(id_mode))
-        
+
         if self.raw_custom_temp_remaining_time() > 0:
             await self.client.update(f"{self._prefix}/0/2/10/0", "0")
         await self.coordinator.async_request_refresh()
@@ -165,7 +169,7 @@ class WindhagerBaseThermostat(CoordinatorEntity, ClimateEntity):
         temp = kwargs.get(ATTR_TEMPERATURE)
         if temp is None:
             raise WindhagerValueError("No temperature provided")
-            
+
         await self.client.update(f"{self._prefix}/0/3/4/0", str(temp))
         await self.client.update(f"{self._prefix}/0/2/10/0", "400")
         await self.coordinator.async_request_refresh()
@@ -175,6 +179,7 @@ class WindhagerBaseThermostat(CoordinatorEntity, ClimateEntity):
         # Implement if needed
         pass
 
+
 class WindhagerThermostatClimate(WindhagerBaseThermostat):
     """Windhager climate with temperature bias."""
 
@@ -183,10 +188,10 @@ class WindhagerThermostatClimate(WindhagerBaseThermostat):
         """Return the current temperature."""
         current = self.get_oid_value("/0/0/1/0")
         bias = self.get_oid_value("/0/3/58/0")
-        
+
         if current is None or bias is None:
             return None
-            
+
         return current - bias
 
     @property
@@ -194,16 +199,17 @@ class WindhagerThermostatClimate(WindhagerBaseThermostat):
         """Return the temperature we try to reach."""
         target = self.get_oid_value("/0/1/1/0")
         bias = self.get_oid_value("/0/3/58/0")
-        
+
         if target is None or bias is None:
             return None
-            
+
         return target - bias
 
     async def set_current_temp_compensation(self, compensation: float) -> None:
         """Set the temperature compensation value."""
         await self.client.update(f"{self._prefix}/0/3/58/0", str(compensation))
         await self.coordinator.async_request_refresh()
+
 
 class WindhagerThermostatClimateWithoutBias(WindhagerBaseThermostat):
     """Windhager climate without temperature bias."""

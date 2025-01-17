@@ -91,7 +91,7 @@ class WindhagerBaseSensor(CoordinatorEntity, SensorEntity):
 
 class WindhagerTemperatureSensor(WindhagerBaseSensor):
     """Temperature sensor implementation."""
-    
+
     def __init__(self, coordinator: Any, device_info: dict) -> None:
         super().__init__(coordinator, device_info)
         self._correction_oid = device_info.get("correction_oid")
@@ -108,7 +108,7 @@ class WindhagerTemperatureSensor(WindhagerBaseSensor):
     @property
     def native_value(self) -> float | None:
         value = self._get_oid_value()
-        
+
         if value is None:
             return None
 

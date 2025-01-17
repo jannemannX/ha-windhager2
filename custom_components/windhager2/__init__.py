@@ -26,7 +26,7 @@ PLATFORMS: list[Platform] = [Platform.CLIMATE, Platform.SENSOR]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up windhager2 integration from a config entry."""
     _LOGGER.info("Setting up Windhager integration for %s", entry.data["host"])
-    
+
     hass.data.setdefault(DOMAIN, {})
 
     client = WindhagerHttpClient(
@@ -41,10 +41,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             async with async_timeout.timeout(20):
                 return await client.fetch_all()
         except asyncio.TimeoutError as err:
-            _LOGGER.error("Timeout fetching data from %s after 20 seconds", entry.data["host"])
+            _LOGGER.error(
+                "Timeout fetching data from %s after 20 seconds", entry.data["host"]
+            )
             raise UpdateFailed(f"Timeout communicating with API: {err}") from err
         except Exception as err:
-            _LOGGER.error("Error fetching data from %s: %s", entry.data["host"], str(err))
+            _LOGGER.error(
+                "Error fetching data from %s: %s", entry.data["host"], str(err)
+            )
             raise UpdateFailed(f"Error communicating with API: {err}") from err
 
     coordinator = DataUpdateCoordinator(
