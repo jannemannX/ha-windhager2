@@ -1,6 +1,6 @@
 # Windhager Heater 2
 
-This is a custom component for Home Assistant to integrate Windhager heaters.
+This is a significant rewrite of the [Windhager Heater](https://github.com/vermi0ffh/ha-windhager) integration. It should be more robust, performant, maintainable and user-friendly.
 
 ## Installation using HACS
 
