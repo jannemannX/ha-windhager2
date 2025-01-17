@@ -1,11 +1,9 @@
 import aiohttp
 import logging
 from .aiohelper import DigestAuth
-from .const import DEFAULT_USERNAME
-_LOGGER = logging.getLogger(__name__)
+from .const import DEFAULT_USERNAME, CLIMATE_FUNCTION_TYPE, HEATER_FUNCTION_TYPE
 
-CLIMATE_FUNCTION_TYPE = 14
-HEATER_FUNCTION_TYPE = 9
+_LOGGER = logging.getLogger(__name__)
 
 
 class WindhagerHttpClient:
@@ -35,7 +33,9 @@ class WindhagerHttpClient:
     async def fetch(self, url):
         try:
             await self._ensure_session()
-            ret = await self._auth.request("GET", f"http://{self.host}/api/1.0/lookup{url}")
+            ret = await self._auth.request(
+                "GET", f"http://{self.host}/api/1.0/lookup{url}"
+            )
             json = await ret.json()
             _LOGGER.debug("Fetched data for %s: %s", url, json)
             return json
@@ -48,8 +48,7 @@ class WindhagerHttpClient:
         await self._auth.request(
             "PUT",
             f"http://{self.host}/api/1.0/datapoint",
-            data=bytes(
-                f'{{"OID":"{oid}","value":"{value}"}}', "utf-8"),
+            data=bytes(f'{{"OID":"{oid}","value":"{value}"}}', "utf-8"),
         )
 
     @staticmethod
@@ -67,14 +66,15 @@ class WindhagerHttpClient:
                 device_id = f"/1/{str(device['nodeId'])}"
 
                 if "functions" not in device:
-                    _LOGGER.warning(
-                        "Device %s has no functions, skipping.", device_id)
+                    _LOGGER.warning("Device %s has no functions, skipping.", device_id)
                     continue
 
                 # Filter climate controls
                 functions = list(
                     filter(
-                        lambda f: (f["fctType"] == CLIMATE_FUNCTION_TYPE and f["lock"] is False),
+                        lambda f: (
+                            f["fctType"] == CLIMATE_FUNCTION_TYPE and f["lock"] is False
+                        ),
                         device["functions"],
                     )
                 )
@@ -128,7 +128,9 @@ class WindhagerHttpClient:
                             "type": "temperature",
                             "correction_oid": f"{device_id}{fct_id}/3/58/0",
                             "oid": f"{device_id}{fct_id}/0/1/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -142,7 +144,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Current Temperature real",
                             "type": "temperature",
                             "oid": f"{device_id}{fct_id}/0/1/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -159,7 +163,9 @@ class WindhagerHttpClient:
                             "state_class": None,
                             "unit": "K",
                             "oid": f"{device_id}{fct_id}/3/58/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -175,7 +181,9 @@ class WindhagerHttpClient:
                             "state_class": None,
                             "unit": "K",
                             "oid": f"{device_id}{fct_id}/3/7/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -189,7 +197,9 @@ class WindhagerHttpClient:
                             "type": "temperature",
                             "correction_oid": f"{device_id}{fct_id}/3/58/0",
                             "oid": f"{device_id}{fct_id}/1/1/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -202,7 +212,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Outside Temperature",
                             "type": "temperature",
                             "oid": f"{device_id}{fct_id}/0/0/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -210,7 +222,9 @@ class WindhagerHttpClient:
                 # Filter heaters
                 functions = list(
                     filter(
-                        lambda f: (f["fctType"] == HEATER_FUNCTION_TYPE and f["lock"] is False),
+                        lambda f: (
+                            f["fctType"] == HEATER_FUNCTION_TYPE and f["lock"] is False
+                        ),
                         device["functions"],
                     )
                 )
@@ -234,7 +248,7 @@ class WindhagerHttpClient:
                             f"{device_id}{fct_id}/23/103/0",
                             # Cleaning
                             f"{device_id}{fct_id}/20/61/0",
-                            f"{device_id}{fct_id}/20/62/0"
+                            f"{device_id}{fct_id}/20/62/0",
                         ]
                     )
 
@@ -250,7 +264,9 @@ class WindhagerHttpClient:
                             "state_class": None,
                             "unit": "%",
                             "oid": f"{device_id}{fct_id}/0/9/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -263,7 +279,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Fumes Temperature",
                             "type": "temperature",
                             "oid": f"{device_id}{fct_id}/0/11/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -276,7 +294,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Heater Temperature",
                             "type": "temperature",
                             "oid": f"{device_id}{fct_id}/0/7/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -289,7 +309,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Combustion chamber Temperature",
                             "type": "temperature",
                             "oid": f"{device_id}{fct_id}/0/45/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -320,7 +342,9 @@ class WindhagerHttpClient:
                             ],
                             "type": "select",
                             "oid": f"{device_id}{fct_id}/2/1/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -333,7 +357,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Pellet consumption",
                             "type": "total",
                             "oid": f"{device_id}{fct_id}/23/100/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -346,7 +372,9 @@ class WindhagerHttpClient:
                             "name": f"{functions[0]['name']} Total Pellet consumption",
                             "type": "total_increasing",
                             "oid": f"{device_id}{fct_id}/23/103/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -363,7 +391,9 @@ class WindhagerHttpClient:
                             "state_class": None,
                             "unit": "h",
                             "oid": f"{device_id}{fct_id}/20/61/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -380,7 +410,9 @@ class WindhagerHttpClient:
                             "state_class": None,
                             "unit": "h",
                             "oid": f"{device_id}{fct_id}/20/62/0",
-                            "device_id": self.slugify(f"{self.host}{str(device['nodeId'])}"),
+                            "device_id": self.slugify(
+                                f"{self.host}{str(device['nodeId'])}"
+                            ),
                             "device_name": functions[0]["name"],
                         }
                     )
@@ -399,7 +431,8 @@ class WindhagerHttpClient:
                 else:
                     ret["oids"][oid] = None
                     _LOGGER.warning(
-                        "Invalid or missing value for OID %s: %s", oid, json)
+                        "Invalid or missing value for OID %s: %s", oid, json
+                    )
             except Exception as e:
                 ret["oids"][oid] = None
                 _LOGGER.error("Error while fetching OID %s: %s", oid, str(e))
