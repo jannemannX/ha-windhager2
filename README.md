@@ -5,8 +5,11 @@ This is a custom component for Home Assistant to integrate Windhager heaters.
 ## Installation using HACS
 
 1. Install [HACS](https://hacs.xyz/)
-2. Add this repository as a custom repository in HACS by clicking on the three dots in the top right corner and selecting "Ccustom repository".
-3. Enter `https://github.com/jannemannX/ha-windhager2` as the repository URL and "Integration" as the type.
+2. Add this repository as a custom repository in HACS by clicking on the three dots in the top right corner and selecting "Custom repository".
+3. Enter the following as the repository URL and select "Integration" as the type:
+```
+https://github.com/jannemannX/ha-windhager2
+```
 4. Search for "Windhager Heater 2" and download it.
 5. Restart Home Assistant.
 
