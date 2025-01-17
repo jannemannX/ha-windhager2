@@ -1,12 +1,11 @@
 import aiohttp
 import logging
 from .aiohelper import DigestAuth
-
+from .const import DEFAULT_USERNAME
 _LOGGER = logging.getLogger(__name__)
 
 CLIMATE_FUNCTION_TYPE = 14
 HEATER_FUNCTION_TYPE = 9
-DEFAULT_USERNAME = "USER"
 
 
 class WindhagerHttpClient:
