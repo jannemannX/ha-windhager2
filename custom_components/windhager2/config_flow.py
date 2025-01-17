@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from urllib.parse import urlparse
 
 import voluptuous as vol
 
@@ -27,24 +28,32 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str, Any]:
     """Validate the user input allows us to connect."""
-    _LOGGER.debug("Validating connection to Windhager device at %s", data["host"])
+    host = data["host"].strip().rstrip('/')
+    
+    # Remove any protocol prefix if present
+    if '://' in host:
+        parsed = urlparse(host)
+        host = parsed.netloc or parsed.path
+    
+    _LOGGER.info("Validating Windhager connection - Host: %s", host)
+    
     try:
         client = WindhagerHttpClient(
-            host=data["host"],
+            host=host,
             password=data["password"],
         )
 
         try:
             _LOGGER.debug("Testing connection by fetching root device info")
             await client.fetch("/1")
-            _LOGGER.info("Successfully connected to Windhager device at %s", data["host"])
+            _LOGGER.info("Successfully connected to Windhager device at %s", host)
         except Exception as err:
-            _LOGGER.error("Connection test failed for %s: %s", data["host"], str(err))
+            _LOGGER.error("Connection test failed for %s: %s", host, str(err))
             raise CannotConnect from err
         finally:
             await client.close()
 
-        return {"title": f"Windhager Heater ({data['host']})"}
+        return {"title": f"Windhager Heater ({host})"}
 
     except Exception as err:
         _LOGGER.exception("Unexpected exception during validation: %s", str(err))
